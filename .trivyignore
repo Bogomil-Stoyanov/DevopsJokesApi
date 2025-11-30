@@ -1,0 +1,20 @@
+# Trivy Ignore File
+
+# Strategy: Ignore vulnerabilities in packages only present in build stages
+
+# These are devDependencies that never reach production containers
+
+# Ignore Node.js devDependency packages (testing, linting, build tools)
+
+# Pattern: Only scan production dependencies, not build-time tools
+
+_.test.js
+_.spec.js
+jest*
+eslint*
+@eslint*
+vite*
+@vitejs*
+rimraf*
+cross-spawn*
+glob*

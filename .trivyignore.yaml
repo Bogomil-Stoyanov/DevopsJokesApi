@@ -1,0 +1,23 @@
+# Trivy configuration for more granular control
+
+vulnerabilities:
+  # Ignore vulnerabilities only in specific paths (build artifacts)
+  - id: "*"
+    paths:
+      - "**/node_modules/jest/**"
+      - "**/node_modules/eslint/**"
+      - "**/node_modules/@eslint/**"
+      - "**/node_modules/vite/**"
+      - "**/node_modules/@vitejs/**"
+      - "**/node_modules/cross-spawn/**"
+      - "**/node_modules/glob/**"
+      - "**/node_modules/rimraf/**"
+
+  - pkgName: "eslint*"
+    statement: "devDependency only, not in production"
+
+  - pkgName: "jest*"
+    statement: "Testing tool, not in production runtime"
+
+  - pkgName: "vite*"
+    statement: "Build tool, not in production runtime"
