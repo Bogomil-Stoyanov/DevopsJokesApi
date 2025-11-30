@@ -2,14 +2,14 @@
 
 A full-stack application built as a DevOps course project, featuring a monorepo structure with Node.js/Express backend and React frontend.
 
-## 🏗️ Architecture
+## Architecture
 
 This is a **monorepo** structure containing:
 
 - **Backend** (`/backend`): Express.js REST API serving random programming jokes
 - **Frontend** (`/frontend`): React application with Vite and Tailwind CSS
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 jokes-api-project/
@@ -34,14 +34,40 @@ jokes-api-project/
 └── README.md              # This file
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
+
+**Local Development:**
 
 - Node.js (v18 or higher)
 - npm
 
+**Docker (Recommended):**
+
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+
 ### Installation
+
+#### Option 1: Docker (Recommended)
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Or run in detached mode
+docker-compose up -d
+```
+
+Access the application:
+
+- Frontend: http://localhost
+- Backend API: http://localhost:5000
+
+See [DOCKER.md](./DOCKER.md) for detailed Docker documentation.
+
+#### Option 2: Local Development
 
 Install all dependencies for both backend and frontend:
 
@@ -124,7 +150,7 @@ npm test
 - `GET /health` - Health check endpoint
 - `GET /` - Welcome message
 
-## 🎨 Frontend Features
+## Frontend Features
 
 - **Responsive Design**: Works on desktop and mobile
 - **Tailwind CSS**: Modern, utility-first styling
@@ -132,7 +158,7 @@ npm test
 - **Error Handling**: User-friendly error messages
 - **Auto-fetch**: Loads a joke automatically on mount
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend
 
@@ -146,13 +172,37 @@ npm test
 - **React 18** - UI library
 - **Vite** - Build tool and dev server
 - **Tailwind CSS** - Utility-first CSS framework
+- **Nginx** - Production web server (in Docker)
 
-## 📦 DevOps Pipeline (Coming Soon)
+### DevOps
+
+- **Docker** - Containerization
+- **Docker Compose** - Multi-container orchestration
+- **Alpine Linux** - Minimal base images
+
+## Docker Support
+
+This application is fully containerized with Docker:
+
+- **Multi-stage builds** for optimized image sizes
+- **Non-root users** for enhanced security
+- **Health checks** for monitoring
+- **Docker Compose** for easy orchestration
+
+Quick start:
+
+```bash
+docker-compose up -d
+```
+
+See [DOCKER.md](./DOCKER.md) for complete Docker documentation.
+
+## DevOps Pipeline Progress
 
 This project is designed for a complete DevOps pipeline including:
 
 - ✅ **Phase 1**: Code Scaffolding (Complete)
-- 🔄 **Phase 2**: Docker containerization
+- ✅ **Phase 2**: Docker Containerization (Complete)
 - 🔄 **Phase 3**: Kubernetes deployment
 - 🔄 **Phase 4**: GitHub Actions CI/CD
 - 🔄 **Phase 5**: Security (SAST) implementation
