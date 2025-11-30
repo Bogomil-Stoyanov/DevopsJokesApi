@@ -1,20 +1,21 @@
 # Trivy Ignore File
 
-# Strategy: Ignore vulnerabilities in packages only present in build stages
+# These vulnerabilities are in devDependencies used only during build stage
 
-# These are devDependencies that never reach production containers
+# and are NOT present in the final production container images
 
-# Ignore Node.js devDependency packages (testing, linting, build tools)
+# CVE-2024-21538: cross-spawn ReDoS vulnerability
 
-# Pattern: Only scan production dependencies, not build-time tools
+# Location: Build stage only (devDependency of Jest/ESLint)
 
-_.test.js
-_.spec.js
-jest*
-eslint*
-@eslint*
-vite*
-@vitejs*
-rimraf*
-cross-spawn*
-glob*
+# Risk: Low - not present in production runtime
+
+CVE-2024-21538
+
+# CVE-2025-64756: glob command injection vulnerability
+
+# Location: Build stage only (devDependency of build tools)
+
+# Risk: Low - not present in production runtime, CLI not exposed
+
+CVE-2025-64756
