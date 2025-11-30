@@ -1,0 +1,29 @@
+{
+  "name": "jokes-api-project",
+  "version": "1.0.0",
+  "description": "DevOps Jokes API Monorepo - Full Stack Application",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "backend:start": "cd backend && npm start",
+    "backend:test": "cd backend && npm test",
+    "frontend:build": "cd frontend && npm run build",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "test": "cd backend && npm test"
+  },
+  "keywords": [
+    "jokes",
+    "api",
+    "devops",
+    "monorepo",
+    "express",
+    "react"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
