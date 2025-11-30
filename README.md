@@ -178,6 +178,7 @@ npm test
 
 - **Docker** - Containerization
 - **Docker Compose** - Multi-container orchestration
+- **Kubernetes** - Container orchestration
 - **Alpine Linux** - Minimal base images
 
 ## Docker Support
@@ -197,13 +198,33 @@ docker-compose up -d
 
 See [DOCKER.md](./DOCKER.md) for complete Docker documentation.
 
-## DevOps Pipeline Progress
+## Kubernetes Support
+
+Production-ready Kubernetes manifests with:
+
+- **Deployments** with 2 replicas and rolling updates
+- **Services** (ClusterIP for backend, LoadBalancer for frontend)
+- **Ingress** for routing and load balancing
+- **HPA** (Horizontal Pod Autoscaler) for auto-scaling
+- **ConfigMaps** for configuration management
+- **Resource limits** and health probes
+
+Quick start with Minikube:
+
+```bash
+./k8s-start.sh
+```
+
+See [k8s/README.md](./k8s/README.md) for complete Kubernetes documentation.  
+See [k8s/MINIKUBE.md](./k8s/MINIKUBE.md) for Minikube-specific guide.
+
+## 📦 DevOps Pipeline Progress
 
 This project is designed for a complete DevOps pipeline including:
 
-- ✅ **Phase 1**: Code Scaffolding (Complete)
-- ✅ **Phase 2**: Docker Containerization (Complete)
-- 🔄 **Phase 3**: Kubernetes deployment
+- ✅ **Phase 1**: Code Scaffolding
+- ✅ **Phase 2**: Docker Containerization
+- ✅ **Phase 3**: Kubernetes Deployment
 - 🔄 **Phase 4**: GitHub Actions CI/CD
 - 🔄 **Phase 5**: Security (SAST) implementation
 
