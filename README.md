@@ -8,14 +8,18 @@ This is a **monorepo** structure containing:
 
 - **Backend** (`/backend`): Express.js REST API serving random programming jokes
 - **Frontend** (`/frontend`): React application with Vite and Tailwind CSS
+- **Docker Support**: Multi-stage Dockerfiles with security best practices
+- **Kubernetes**: Production-ready manifests with autoscaling and ingress
+- **CI/CD**: GitHub Actions pipeline with SAST security scanning
 
 ## Project Structure
 
 ```
-jokes-api-project/
+DeveopsJokeApi/
 ├── backend/
 │   ├── server.js           # Express server with /api/joke endpoint
 │   ├── server.test.js      # Jest unit tests
+│   ├── Dockerfile          # Multi-stage production Dockerfile
 │   ├── package.json        # Backend dependencies
 │   └── README.md
 ├── frontend/
@@ -25,12 +29,29 @@ jokes-api-project/
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── index.css
-│   ├── index.html
+│   ├── Dockerfile          # Multi-stage Nginx Dockerfile
+│   ├── nginx.conf          # Custom Nginx configuration
 │   ├── vite.config.js
 │   ├── tailwind.config.js
 │   ├── package.json        # Frontend dependencies
 │   └── README.md
-├── package.json            # Root package.json with monorepo scripts
+├── k8s/                    # Kubernetes manifests
+│   ├── namespace.yaml
+│   ├── backend-deployment.yaml
+│   ├── backend-service.yaml
+│   ├── frontend-deployment.yaml
+│   ├── frontend-service.yaml
+│   ├── ingress.yaml
+│   ├── *-hpa.yaml         # Horizontal Pod Autoscalers
+│   └── README.md
+├── .github/workflows/
+│   └── pipeline.yml        # CI/CD with SAST scanning
+├── docker-compose.yml      # Docker Compose configuration
+├── k8s-start.sh           # Minikube startup script
+├── k8s-stop.sh            # Minikube cleanup script
+├── DOCKER.md              # Docker documentation
+├── CICD.md                # CI/CD pipeline documentation
+├── package.json           # Root package.json with monorepo scripts
 └── README.md              # This file
 ```
 
@@ -218,17 +239,43 @@ Quick start with Minikube:
 See [k8s/README.md](./k8s/README.md) for complete Kubernetes documentation.  
 See [k8s/MINIKUBE.md](./k8s/MINIKUBE.md) for Minikube-specific guide.
 
+## 🚀 CI/CD Pipeline
+
+Automated CI/CD pipeline with comprehensive security scanning:
+
+```bash
+# Pipeline automatically runs on:
+# - Push to main/master
+# - Pull requests
+```
+
+**Pipeline stages:**
+
+1. **CI & Testing**: Linting, unit tests
+2. **Security Scanning (SAST)**:
+   - npm audit (dependency vulnerabilities)
+   - CodeQL (static code analysis)
+   - Trivy (Docker image scanning)
+3. **Build**: Docker images with layer caching
+4. **Delivery**: Push to Docker Hub (push to main only)
+
+**Required GitHub Secrets:**
+
+- `DOCKERHUB_USERNAME`: Your Docker Hub username
+- `DOCKERHUB_TOKEN`: Docker Hub access token
+
+See [CICD.md](./CICD.md) for complete pipeline documentation.
+
 ## 📦 DevOps Pipeline Progress
 
-This project is designed for a complete DevOps pipeline including:
+This project implements a complete DevOps pipeline:
 
 - ✅ **Phase 1**: Code Scaffolding
 - ✅ **Phase 2**: Docker Containerization
 - ✅ **Phase 3**: Kubernetes Deployment
-- 🔄 **Phase 4**: GitHub Actions CI/CD
-- 🔄 **Phase 5**: Security (SAST) implementation
+- ✅ **Phase 4**: GitHub Actions CI/CD with SAST Security Scanning
 
-## 🔐 Security
+## 🔐 Security Features
 
 CORS is enabled on the backend to allow cross-origin requests from the frontend.
 

@@ -1,0 +1,465 @@
+# CI/CD Pipeline Documentation
+
+## Overview
+
+This project implements a comprehensive CI/CD pipeline with integrated SAST (Static Application Security Testing) security scanning. The pipeline is orchestrated through GitHub Actions and enforces security best practices at multiple stages.
+
+## Pipeline Architecture
+
+### Workflow Triggers
+
+The pipeline executes on:
+
+- **Push events** to `main` or `master` branches
+- **Pull request events** targeting `main` or `master` branches
+- **Manual dispatch** via GitHub Actions UI
+
+### Pipeline Stages
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 1: CI & Testing                                      │
+│  - Checkout code                                            │
+│  - Install dependencies (backend + frontend)                │
+│  - Run linting checks                                       │
+│  - Execute unit tests                                       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 2: SAST - Security Scanning (Parallel)               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  2A: Dependency Scanning (npm audit)                 │   │
+│  │  - Scan backend dependencies                         │   │
+│  │  - Scan frontend dependencies                        │   │
+│  │  - Fail on HIGH/CRITICAL vulnerabilities             │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  2B: Code Analysis (CodeQL)                          │   │
+│  │  - Static code analysis for JavaScript               │   │
+│  │  - Security and quality queries                      │   │
+│  │  - Upload results to GitHub Security tab             │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 3: Build Docker Images                               │
+│  - Build backend Docker image                               │
+│  - Build frontend Docker image                              │
+│  - Cache layers for faster builds                           │
+│  - Save images as artifacts                                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 4: Container Security Scanning (Trivy)               │
+│  - Load built Docker images                                 │
+│  - Scan for OS vulnerabilities                              │
+│  - Scan for package vulnerabilities                         │
+│  - Fail on HIGH/CRITICAL findings                           │
+│  - Upload results to GitHub Security tab                    │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 5: Delivery (Push events only)                       │
+│  - Login to Docker Hub                                      │
+│  - Tag images with SHA and latest                           │
+│  - Push images to Docker Hub registry                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Security Scanning Deep Dive
+
+### 1. Dependency Vulnerability Scanning (npm audit)
+
+**Tool**: npm audit (native npm security tool)
+
+**What it does**:
+
+- Analyzes `package-lock.json` for known vulnerabilities in dependencies
+- Checks against the npm Advisory Database
+- Reports severity levels: LOW, MODERATE, HIGH, CRITICAL
+
+**Configuration**:
+
+```bash
+npm audit --production --audit-level=high
+```
+
+- `--production`: Only scans production dependencies (excludes devDependencies)
+- `--audit-level=high`: **Fails the build** if HIGH or CRITICAL vulnerabilities are found
+
+**Pipeline behavior**:
+
+- ✅ **Pass**: No vulnerabilities OR only LOW/MODERATE
+- ❌ **Fail**: Any HIGH or CRITICAL vulnerabilities detected
+- Generates JSON reports uploaded as artifacts for review
+
+**Remediation**:
+
+```bash
+# Update vulnerable dependencies
+npm audit fix
+
+# Force update (breaking changes possible)
+npm audit fix --force
+
+# Manual review
+npm audit
+```
+
+---
+
+### 2. Static Application Security Testing (CodeQL)
+
+**Tool**: GitHub CodeQL (by GitHub Security Lab)
+
+**What it does**:
+
+- Semantic code analysis to detect security vulnerabilities
+- Identifies:
+  - SQL injection
+  - Cross-site scripting (XSS)
+  - Path traversal
+  - Command injection
+  - Insecure cryptography
+  - Sensitive data exposure
+  - And 200+ security patterns
+
+**Configuration**:
+
+```yaml
+queries: security-and-quality
+language: javascript
+```
+
+**Pipeline behavior**:
+
+- Scans JavaScript/TypeScript codebase
+- Results uploaded to **GitHub Security → Code scanning alerts**
+- Does NOT fail the build (informational)
+- Provides actionable remediation guidance
+
+**Best Practices**:
+
+- Review alerts in GitHub Security tab
+- Enable CodeQL on all branches
+- Use security-and-quality query suite for comprehensive coverage
+
+---
+
+### 3. Docker Image Vulnerability Scanning (Trivy)
+
+**Tool**: Aqua Security Trivy
+
+**What it does**:
+
+- Scans Docker images for:
+  - OS package vulnerabilities (Alpine, Debian, etc.)
+  - Application dependencies (npm, pip, etc.)
+  - Misconfigurations
+  - Embedded secrets
+
+**Configuration**:
+
+```yaml
+severity: "CRITICAL,HIGH"
+exit-code: "1" # Fail on vulnerabilities
+format: "sarif" # Security Alert Format
+```
+
+**Pipeline behavior**:
+
+- ✅ **Pass**: No HIGH/CRITICAL vulnerabilities
+- ❌ **Fail**: Any HIGH/CRITICAL vulnerabilities in images
+- Uploads SARIF reports to GitHub Security tab
+- Scans BOTH backend and frontend images
+
+**Remediation**:
+
+```bash
+# Scan locally
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+  aquasec/trivy image jokes-api-backend:latest
+
+# Update base images in Dockerfiles
+FROM node:18-alpine3.19  # Use specific versions with patches
+
+# Rebuild after fixes
+docker build -t jokes-api-backend:latest ./backend
+```
+
+---
+
+## Required GitHub Secrets
+
+To enable Docker Hub delivery, configure these secrets in **Settings → Secrets and variables → Actions**:
+
+| Secret Name          | Description             | How to obtain                                               |
+| -------------------- | ----------------------- | ----------------------------------------------------------- |
+| `DOCKERHUB_USERNAME` | Docker Hub username     | Your Docker Hub account username                            |
+| `DOCKERHUB_TOKEN`    | Docker Hub access token | Docker Hub → Account Settings → Security → New Access Token |
+
+### Creating a Docker Hub Access Token:
+
+1. Login to [Docker Hub](https://hub.docker.com/)
+2. Navigate to **Account Settings → Security**
+3. Click **New Access Token**
+4. Name: `github-actions-pipeline`
+5. Permissions: **Read, Write, Delete**
+6. Copy the token (only shown once)
+7. Add to GitHub repository secrets
+
+---
+
+## Pipeline Execution
+
+### On Pull Requests
+
+```
+✅ CI & Testing
+✅ Security Scanning (npm audit, CodeQL)
+✅ Build Docker Images
+✅ Trivy Image Scanning
+```
+
+### On Push to main/master
+
+```
+✅ CI & Testing
+✅ Security Scanning (npm audit, CodeQL)
+✅ Build Docker Images
+✅ Trivy Image Scanning
+✅ Delivery → Docker Hub
+```
+
+---
+
+## Security Policy
+
+### Vulnerability Handling
+
+**HIGH/CRITICAL vulnerabilities = Build Failure**
+
+When security scans fail:
+
+1. **Review the security report**:
+
+   - GitHub Actions → Failed workflow → Expand failed step
+   - Or download artifact reports
+
+2. **Assess the vulnerability**:
+
+   - Is it in production code or devDependencies?
+   - Is there a patch available?
+   - What's the exploit risk?
+
+3. **Remediate**:
+
+   - Update dependencies: `npm update`
+   - Apply patches: `npm audit fix`
+   - If no fix exists, consider:
+     - Alternative packages
+     - Mitigation strategies
+     - Risk acceptance (documented)
+
+4. **Verify the fix**:
+
+   ```bash
+   npm audit --production --audit-level=high
+   ```
+
+5. **Re-run the pipeline**:
+   - Commit the fixes
+   - Push to trigger new run
+
+---
+
+## Continuous Delivery
+
+### Image Versioning Strategy
+
+Images are tagged with:
+
+- **`latest`**: Always points to the most recent main/master build
+- **`<git-sha>`**: Immutable tag for specific commit (e.g., `abc1234`)
+
+**Why both?**
+
+- `latest`: Easy for development/testing
+- SHA tags: Production deployments (traceable, rollback-safe)
+
+### Using Images from Docker Hub
+
+```bash
+# Pull the latest images
+docker pull <your-dockerhub-username>/jokes-api-backend:latest
+docker pull <your-dockerhub-username>/jokes-api-frontend:latest
+
+# Or specific version
+docker pull <your-dockerhub-username>/jokes-api-backend:abc1234567890
+```
+
+### Kubernetes Deployment Update
+
+Update `k8s/backend-deployment.yaml`:
+
+```yaml
+spec:
+  containers:
+    - name: backend
+      image: <your-dockerhub-username>/jokes-api-backend:abc1234567890
+      # Use SHA tags in production!
+```
+
+---
+
+## Monitoring & Observability
+
+### GitHub Security Features
+
+1. **Code Scanning Alerts** (CodeQL results)
+
+   - Navigate to: **Security → Code scanning**
+   - Filter by severity
+   - Assign and track fixes
+
+2. **Dependabot Alerts** (complement to npm audit)
+
+   - Enable in **Settings → Security → Dependabot alerts**
+   - Automatic PR creation for updates
+
+3. **Secret Scanning** (prevent credential leaks)
+   - Enable in **Settings → Security → Secret scanning**
+
+### Artifacts
+
+Each workflow run stores:
+
+- `dependency-audit-reports`: npm audit JSON files
+- `backend-image`: Docker image tarball
+- `frontend-image`: Docker image tarball
+
+Download from **Actions → Workflow run → Artifacts**
+
+---
+
+## Performance Optimization
+
+### Build Caching
+
+The pipeline uses GitHub Actions cache for:
+
+- **npm packages**: `cache: 'npm'`
+- **Docker layers**: `cache-from: type=gha`
+
+**Benefits**:
+
+- Faster dependency installation
+- Reduced build times (3-5x speedup)
+- Lower CI costs
+
+### Parallel Execution
+
+Jobs run in parallel when possible:
+
+```
+test → [security-dependencies, security-codeql] → build → security-image-scan → deploy
+```
+
+Typical execution time:
+
+- **PR**: ~5-8 minutes
+- **Push with delivery**: ~8-12 minutes
+
+---
+
+## Troubleshooting
+
+### Issue: npm audit fails with false positives
+
+**Solution**: Audit only production dependencies
+
+```yaml
+run: npm audit --production --audit-level=high
+```
+
+### Issue: CodeQL not finding code
+
+**Solution**: Ensure autobuild works or specify build commands
+
+```yaml
+- name: Autobuild
+  uses: github/codeql-action/autobuild@v3
+```
+
+### Issue: Trivy scan timeout
+
+**Solution**: Increase timeout or reduce scan scope
+
+```yaml
+- uses: aquasecurity/trivy-action@master
+  with:
+    timeout: "10m"
+```
+
+### Issue: Docker Hub push unauthorized
+
+**Solution**: Verify secrets are set correctly
+
+```bash
+# Test locally
+echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+```
+
+---
+
+## Local Testing
+
+Test security scans locally before pushing:
+
+```bash
+# Dependency scanning
+cd backend && npm audit --production --audit-level=high
+cd frontend && npm audit --production --audit-level=high
+
+# Build images
+docker build -t jokes-api-backend:test ./backend
+docker build -t jokes-api-frontend:test ./frontend
+
+# Trivy scan
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+  aquasec/trivy image jokes-api-backend:test --severity HIGH,CRITICAL
+```
+
+---
+
+## Best Practices
+
+1. **Never skip security scans** - They protect production
+2. **Review alerts weekly** - Don't let them accumulate
+3. **Use SHA tags in production** - Avoid `latest` for stability
+4. **Pin base image versions** - `node:18-alpine3.19` instead of `node:18-alpine`
+5. **Rotate Docker Hub tokens** - Every 90 days minimum
+6. **Enable branch protection** - Require status checks to pass
+7. **Monitor GitHub Security tab** - Set up notifications
+
+---
+
+## References
+
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [npm audit Documentation](https://docs.npmjs.com/cli/v9/commands/npm-audit)
+- [CodeQL Documentation](https://codeql.github.com/docs/)
+- [Trivy Documentation](https://aquasecurity.github.io/trivy/)
+- [Docker Security Best Practices](https://docs.docker.com/develop/security-best-practices/)
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+
+---
+
+## Support
+
+For issues or questions:
+
+1. Check workflow logs in GitHub Actions
+2. Review security alerts in GitHub Security tab
+3. Consult this documentation
+4. Review relevant tool documentation above
