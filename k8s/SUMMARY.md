@@ -4,32 +4,32 @@
 
 ### Core Manifests
 
-- ✅ **namespace.yaml** - Isolated namespace `jokes-api`
-- ✅ **configmap.yaml** - Configuration for both services
-- ✅ **backend-deployment.yaml** - Backend deployment with 2 replicas
-- ✅ **backend-service.yaml** - ClusterIP service for backend
-- ✅ **frontend-deployment.yaml** - Frontend deployment with 2 replicas
-- ✅ **frontend-service.yaml** - LoadBalancer service for frontend
-- ✅ **ingress.yaml** - Ingress routing for HTTP traffic
+- **namespace.yaml** - Isolated namespace `jokes-api`
+- **configmap.yaml** - Configuration for both services
+- **backend-deployment.yaml** - Backend deployment with 2 replicas
+- **backend-service.yaml** - ClusterIP service for backend
+- **frontend-deployment.yaml** - Frontend deployment with 2 replicas
+- **frontend-service.yaml** - LoadBalancer service for frontend
+- **ingress.yaml** - Ingress routing for HTTP traffic
 
 ### Additional Resources
 
-- ✅ **frontend-service-nodeport.yaml** - Alternative NodePort for local testing
-- ✅ **backend-hpa.yaml** - Horizontal Pod Autoscaler (2-10 replicas)
-- ✅ **frontend-hpa.yaml** - Horizontal Pod Autoscaler (2-8 replicas)
+- **frontend-service-nodeport.yaml** - Alternative NodePort for local testing
+- **backend-hpa.yaml** - Horizontal Pod Autoscaler (2-10 replicas)
+- **frontend-hpa.yaml** - Horizontal Pod Autoscaler (2-8 replicas)
 
 ### Helper Scripts
 
-- ✅ **deploy.sh** - Automated deployment script
-- ✅ **cleanup.sh** - Automated cleanup script
+- **deploy.sh** - Automated deployment script
+- **cleanup.sh** - Automated cleanup script
 
 ### Documentation
 
-- ✅ **README.md** - Complete Kubernetes guide
-- ✅ **MINIKUBE.md** - Minikube-specific instructions
-- ✅ **TESTING.md** - Comprehensive testing guide
+- **README.md** - Complete Kubernetes guide
+- **MINIKUBE.md** - Minikube-specific instructions
+- **TESTING.md** - Comprehensive testing guide
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```
                           Internet
@@ -85,7 +85,7 @@
 - **Ingress** for HTTP routing and TLS (optional)
 - **Service discovery** via DNS
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables (ConfigMap)
 
