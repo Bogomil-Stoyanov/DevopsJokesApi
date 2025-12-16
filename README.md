@@ -52,7 +52,13 @@ The application serves random programming jokes through a REST API, with a moder
     │   (React)      │───────────▶│   (Express)      │
     │   Port 80      │   API      │   Port 5000      │
     │   2 replicas   │   Calls    │   2 replicas     │
-    └────────────────┘            └──────────────────┘
+    └────────────────┘            └────────┬─────────┘
+                                           │
+                                  ┌────────▼─────────┐
+                                  │   PostgreSQL     │
+                                  │   Database       │
+                                  │   Port 5432      │
+                                  └──────────────────┘
 ```
 
 ### DevOps Pipeline Architecture
@@ -69,13 +75,16 @@ Git Push → CI → Security Scanning → Build → Container Scan → Deploy
 
 ### Backend
 
-| Technology | Purpose               | Version |
-| ---------- | --------------------- | ------- |
-| Node.js    | Runtime environment   | 18      |
-| Express.js | Web framework         | 4.18.2  |
-| CORS       | Cross-origin requests | 2.8.5   |
-| Jest       | Testing framework     | 29.7.0  |
-| Supertest  | HTTP testing          | 6.3.3   |
+| Technology | Purpose                    | Version |
+| ---------- | -------------------------- | ------- |
+| Node.js    | Runtime environment        | 18      |
+| Express.js | Web framework              | 4.18.2  |
+| PostgreSQL | Database                   | 16      |
+| Knex.js    | Query builder & migrations | 3.1.0   |
+| pg         | PostgreSQL driver          | 8.11.3  |
+| CORS       | Cross-origin requests      | 2.8.5   |
+| Jest       | Testing framework          | 29.7.0  |
+| Supertest  | HTTP testing               | 6.3.3   |
 
 ### Frontend
 
@@ -107,6 +116,14 @@ DeveopsJokeApi/
 ├── backend/
 │   ├── server.js           # Express server with /api/joke endpoint
 │   ├── server.test.js      # Jest unit tests
+│   ├── migrations.test.js  # Database migration integration tests
+│   ├── db.js               # Knex database connection module
+│   ├── knexfile.js         # Knex configuration (dev/prod/test)
+│   ├── docker-entrypoint.sh # Migration runner for Docker
+│   ├── migrations/         # Database migration files
+│   │   └── 20251216000001_create_jokes_table.js
+│   ├── seeds/              # Database seed files
+│   │   └── 01_jokes.js
 │   ├── Dockerfile          # Multi-stage Dockerfile
 │   ├── package.json        # Backend dependencies
 │   └── README.md
@@ -133,8 +150,8 @@ DeveopsJokeApi/
 │   ├── *-hpa.yaml         # Horizontal Pod Autoscalers
 │   └── README.md
 ├── .github/workflows/
-│   └── pipeline.yml        # CI/CD with SAST scanning
-├── docker-compose.yml      # Docker Compose configuration
+│   └── pipeline.yml        # CI/CD with SAST scanning + Migration Stress Test
+├── docker-compose.yml      # Docker Compose with PostgreSQL
 ├── k8s-start.sh           # Minikube startup script
 ├── k8s-stop.sh            # Minikube cleanup script
 ├── DOCKER.md              # Docker documentation
@@ -174,15 +191,19 @@ Choose one of the following deployment methods based on your environment:
 git clone https://github.com/Bogomil-Stoyanov/DevopsJokesApi.git
 cd DevopsJokesApi
 
-# Start all services
+# Start all services (PostgreSQL, backend, frontend)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
 
+# Wait for migrations to complete (backend will run migrations automatically)
+# Check backend logs: docker-compose logs backend
+
 # Access the application
 # Frontend: http://localhost
-# Backend: http://localhost:5000
+# Backend API: http://localhost:5000
+# PostgreSQL: localhost:5432 (user: postgres, password: postgres, db: jokes_db)
 ```
 
 #### 2. Kubernetes with Minikube
@@ -207,7 +228,26 @@ minikube start
 # Install all dependencies
 npm run install:all
 
+# Set up PostgreSQL database locally
+# Option 1: Use Docker for database only
+docker run -d \
+  --name jokes-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=jokes_db \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+# Option 2: Use local PostgreSQL installation
+# Create database: createdb jokes_db
+
+# Run migrations and seeds
+cd backend
+npm run migrate
+npm run seed
+
 # Start both services in development mode
+cd ..
 npm run dev
 
 # Backend will run on http://localhost:5000
@@ -245,20 +285,44 @@ cd backend
 # Install dependencies
 npm install
 
+# Database Setup (choose one)
+# Option 1: Docker PostgreSQL
+docker run -d --name jokes-db -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16-alpine
+
+# Option 2: Local PostgreSQL
+# Ensure PostgreSQL is running and create database
+createdb jokes_db
+
+# Run database migrations
+npm run migrate
+
+# Seed the database with jokes
+npm run seed
+
 # Start development server (with hot reload)
 npm run dev
 
-# Run tests
+# Run tests (includes migration integration tests)
 npm test
+
+# Run specific test file
+npm test server.test.js
+npm test migrations.test.js
 
 # Run tests with coverage
 npm run test:coverage
+
+# Database management commands
+npm run migrate          # Run all pending migrations
+npm run migrate:rollback # Rollback last batch of migrations
+npm run seed             # Run seed files
+npm run db:setup         # Complete setup: migrate + seed
 ```
 
 The backend server will start on `http://localhost:5000` with the following endpoints:
 
-- `GET /api/joke` - Random joke
-- `GET /health` - Health check
+- `GET /api/joke` - Random joke from database
+- `GET /health` - Health check (includes database connection test)
 - `GET /` - Welcome message
 
 ### Frontend Development
@@ -285,12 +349,26 @@ The frontend development server will start on `http://localhost:3000`.
 
 #### Backend
 
-The backend uses the following environment variables (with defaults):
+The backend uses the following environment variables:
 
 ```bash
-PORT=5000                    # Server port
-NODE_ENV=development         # Environment mode
+# Server Configuration
+PORT=5000                    # Server port (default: 5000)
+NODE_ENV=development         # Environment: development, production, or test
+
+# Database Configuration (PostgreSQL)
+DB_HOST=localhost            # Database host (default: localhost)
+DB_PORT=5432                 # Database port (default: 5432)
+DB_NAME=jokes_db             # Database name (default: jokes_db)
+DB_USER=postgres             # Database user (default: postgres)
+DB_PASSWORD=postgres         # Database password (default: postgres)
 ```
+
+**Database Environments:**
+
+- **Development**: Uses local PostgreSQL (localhost:5432/jokes_db)
+- **Production**: Uses environment variables with SSL support
+- **Test**: Uses separate test database (jokes_db_test) for isolation
 
 #### Frontend
 
@@ -309,17 +387,34 @@ For Docker/Kubernetes deployments, these are configured automatically via Config
 The backend includes comprehensive unit tests for all API endpoints:
 
 ```bash
-# Run all tests
+# Run all tests (unit + integration)
 npm test
 
+# Run specific test suites
+cd backend
+npm test server.test.js           # API endpoint tests
+npm test migrations.test.js       # Database migration tests
+
 # Run tests with coverage report
-cd backend && npm run test:coverage
+npm run test:coverage
 
 # Run tests in watch mode
-cd backend && npm test -- --watch
+npm test -- --watch
 ```
 
 **Test Coverage:**
+
+- API endpoint tests (`server.test.js`)
+  - GET /api/joke returns random joke
+  - GET /health returns server status
+  - Error handling and edge cases
+- Database migration tests (`migrations.test.js`)
+
+  - Migration up (table creation)
+  - Data operations (insert, query, RANDOM())
+  - Migration down (rollback)
+  - Migration recovery (re-apply after rollback)
+  - Schema validation
 
 - API endpoint validation (status codes, response format)
 - Joke data structure verification
@@ -346,30 +441,43 @@ curl http://localhost:5000/health
 
 ### Architecture
 
-The application uses **multi-stage Docker builds** for optimization and security:
+The application uses **multi-stage Docker builds** for optimization and security, with **PostgreSQL database** for persistent storage:
 
 **Backend Dockerfile stages:**
 
 1. **Dependencies**: Install production dependencies only
 2. **Build**: Install dev dependencies and run tests
-3. **Production**: Copy production code with non-root user
+3. **Production**: Copy production code, install PostgreSQL client, run migrations via entrypoint
 
 **Frontend Dockerfile stages:**
 
 1. **Build**: Build React app with Vite
 2. **Production**: Serve with Nginx Alpine (non-root user)
 
+**Database:**
+
+- PostgreSQL 16 Alpine image
+- Automatic health checks with `pg_isready`
+- Persistent volume for data storage
+- Backend waits for database to be healthy before starting
+
 ### Quick Start
 
 ```bash
-# Start all services
+# Start all services (database, backend, frontend)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
 
+# Watch backend migrations
+docker-compose logs -f backend
+
 # Stop services
 docker-compose down
+
+# Stop and remove volumes (clears database)
+docker-compose down -v
 
 # Rebuild and start
 docker-compose up --build
@@ -379,18 +487,40 @@ docker-compose up --build
 
 - **Frontend**: http://localhost:80 (or http://localhost)
 - **Backend API**: http://localhost:5000
-- **Backend Health**: http://localhost:5000/health
+- **Backend Health**: http://localhost:5000/health (includes database connection check)
 - **Frontend Health**: http://localhost/health
+- **PostgreSQL**: localhost:5432 (user: postgres, password: postgres, database: jokes_db)
+
+### Database Management
+
+```bash
+# Run migrations manually
+docker-compose exec backend npm run migrate
+
+# Rollback migrations
+docker-compose exec backend npm run migrate:rollback
+
+# Seed database
+docker-compose exec backend npm run seed
+
+# Access PostgreSQL directly
+docker-compose exec db psql -U postgres -d jokes_db
+
+# View jokes table
+docker-compose exec db psql -U postgres -d jokes_db -c "SELECT * FROM jokes LIMIT 5;"
+```
 
 ### Security Features
 
 ✅ **Multi-stage builds** - Smaller image sizes, no build tools in production  
 ✅ **Non-root users** - Both containers run as UID 1001  
 ✅ **Minimal base images** - Alpine Linux for reduced attack surface  
-✅ **Health checks** - Built-in monitoring for container health  
+✅ **Health checks** - Built-in monitoring for container and database health  
 ✅ **Production dependencies only** - No dev tools in final images  
 ✅ **Security headers** - HSTS, CSP, X-Frame-Options (frontend)  
 ✅ **Resource limits** - CPU and memory constraints
+✅ **Database isolation** - PostgreSQL runs in separate container with health checks
+✅ **Automatic migrations** - Backend entrypoint runs migrations before starting server
 
 ### Individual Container Management
 
@@ -543,34 +673,49 @@ The project includes a comprehensive GitHub Actions pipeline that runs on:
 - Execute unit tests
 - Build frontend
 
-**Stage 2: Security Scanning (SAST)** - _Deep Dive Focus_
+**Stage 2: Database Migration Stress Test** -
 
-_2A. Dependency Scanning (npm audit)_
+- PostgreSQL 16 service container with health checks
+- Run migrations up (create tables)
+- Verify table creation
+- Seed database with 30+ jokes
+- Verify seeded data count (minimum 20 jokes)
+- Test RANDOM() query functionality
+- Rollback migrations (drop tables)
+- Verify table removal
+- Re-apply migrations (recovery test)
+- Verify table recreation
+- Run integration tests
+- Generate migration stress test report
+
+**Stage 3: Security Scanning (SAST)** - _Deep Dive Focus_
+
+_3A. Dependency Scanning (npm audit)_
 
 - Scans `package-lock.json` for known vulnerabilities
 - Fails on HIGH or CRITICAL severity issues
 - Generates detailed audit reports
 
-_2B. Static Code Analysis (CodeQL)_
+_3B. Static Code Analysis (CodeQL)_
 
 - Semantic code analysis for JavaScript
 - Detects security vulnerabilities (XSS, injection, etc.)
 - Results uploaded to GitHub Security tab
 
-**Stage 3: Build Docker Images**
+**Stage 4: Build Docker Images**
 
 - Multi-stage Docker builds
 - Layer caching for performance
 - Images saved as artifacts
 
-**Stage 4: Container Security Scanning (Trivy)**
+**Stage 5: Container Security Scanning (Trivy)**
 
 - Scans built Docker images for vulnerabilities
 - Checks OS packages and application dependencies
 - Fails on HIGH or CRITICAL findings
 - SARIF reports uploaded to GitHub Security
 
-**Stage 5: Delivery** (master branch only)
+**Stage 6: Delivery** (master branch only)
 
 - Login to Docker Hub
 - Tag images with SHA and `latest`
@@ -578,11 +723,12 @@ _2B. Static Code Analysis (CodeQL)_
 
 ### Security Scanning Details
 
-The pipeline implements three layers of security scanning:
+The pipeline implements four layers of security and reliability testing:
 
-1. **npm audit**: Catches vulnerable dependencies before building
-2. **CodeQL**: Identifies security issues in source code
-3. **Trivy**: Scans final container images for vulnerabilities
+1. **Database Migration Stress Test**: Validates migration up/down/recovery cycle with PostgreSQL service container
+2. **npm audit**: Catches vulnerable dependencies before building
+3. **CodeQL**: Identifies security issues in source code
+4. **Trivy**: Scans final container images for vulnerabilities
 
 **Severity Thresholds:**
 
@@ -623,7 +769,7 @@ To enable Docker Hub delivery, configure these in GitHub repository settings:
 
 #### GET /api/joke
 
-Returns a random programming joke.
+Returns a random programming joke from the PostgreSQL database.
 
 **Request:**
 
@@ -640,7 +786,12 @@ curl http://localhost:5000/api/joke
 }
 ```
 
-**Error Response:** `500 Internal Server Error`
+**Implementation:** Uses SQL `ORDER BY RANDOM()` for true random selection from database.
+
+**Error Responses:**
+
+- `404 Not Found` - No jokes found in database
+- `500 Internal Server Error` - Database connection error
 
 ```json
 {
@@ -650,7 +801,7 @@ curl http://localhost:5000/api/joke
 
 #### GET /health
 
-Health check endpoint for monitoring.
+Health check endpoint for monitoring and readiness probes.
 
 **Request:**
 
@@ -662,8 +813,19 @@ curl http://localhost:5000/health
 
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2025-12-16T10:30:00.000Z"
+  "status": "OK",
+  "database": "connected"
+}
+```
+
+**Implementation:** Tests database connection with `SELECT 1` query.
+
+**Error Response:** `503 Service Unavailable` (if database is down)
+
+```json
+{
+  "status": "unhealthy",
+  "database": "disconnected"
 }
 ```
 
@@ -681,24 +843,44 @@ Welcome to Jokes API!
 
 ### DevOps Topics Implemented
 
-This project successfully implements 9 out of 13 required DevOps topics:
+This project successfully implements **10 out of 13** required DevOps topics (minimum: 7):
 
 ✅ **Source control** - Git with GitHub  
-✅ **Branching strategies** - Feature branches (dockerization, ci-cd, k8s)  
+✅ **Branching strategies** - Feature branches (dockerization, ci-cd, k8s, database)  
 ✅ **Building Pipelines** - GitHub Actions multi-stage workflow  
 ✅ **Continuous Integration** - Automated testing and linting  
 ✅ **Continuous Delivery** - Automated Docker Hub deployment  
 ✅ **Security** - _Deep dive: npm audit, CodeQL, Trivy scanning_  
 ✅ **Docker** - Multi-stage builds, Docker Compose  
 ✅ **Kubernetes** - Complete manifests with HPA and ingress  
-✅ **Infrastructure as code** - All configuration as YAML/code
+✅ **Infrastructure as code** - All configuration as YAML/code  
+✅ **Database changes** - PostgreSQL with Knex migrations, automated migration stress testing (up/down/rollback verification) in CI/CD pipeline
 
 ### Project Phases
 
 ✅ **Phase 1**: Code Scaffolding - Backend API, Frontend React app, unit tests  
 ✅ **Phase 2**: Docker Containerization - Multi-stage builds, security hardening  
 ✅ **Phase 3**: Kubernetes Deployment - Production manifests, autoscaling  
-✅ **Phase 4**: CI/CD with SAST - GitHub Actions pipeline with security scanning
+✅ **Phase 4**: CI/CD with SAST - GitHub Actions pipeline with security scanning  
+✅ **Phase 5**: Database Implementation - PostgreSQL with Knex.js migrations, versioned schema changes, automated stress testing in CI/CD
+
+### Database Implementation Details
+
+The project includes a production-ready PostgreSQL database layer with:
+
+- **Migration Management**: Knex.js for versioned schema changes with up/down functions
+- **Data Seeding**: 30+ programming and DevOps jokes for initial data
+- **Three Environments**: Development, Production (with SSL), and Test (isolated database)
+- **Docker Integration**: PostgreSQL container with health checks, automatic migrations on startup
+- **CI/CD Testing**: Migration stress test job that validates:
+  - Migration up (table creation)
+  - Data seeding and verification
+  - RANDOM() query functionality
+  - Migration down (rollback)
+  - Table removal verification
+  - Migration recovery (re-apply)
+  - Integration test suite
+- **Production Features**: Connection pooling, graceful shutdown, health monitoring
 
 ## Documentation
 

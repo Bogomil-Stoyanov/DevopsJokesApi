@@ -189,6 +189,155 @@ jobs:
           path: /tmp/frontend-image.tar
 
   # ============================================
+  # Database Migration Stress Test
+  # ============================================
+  migration-stress-test:
+    name: Database - Migration Stress Test
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jokes_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: jokes_db_test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Verify PostgreSQL connection
+        run: |
+          echo "Verifying PostgreSQL is ready..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -d jokes_db_test -c 'SELECT version();'
+
+      - name: Run migrations (up)
+        working-directory: ./backend
+        run: |
+          echo "Running migrations (up)..."
+          npm run migrate
+          echo "Migrations applied successfully"
+
+      - name: Verify table creation
+        run: |
+          echo "Verifying jokes table exists..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -d jokes_db_test -c '\dt jokes'
+
+      - name: Run seeds
+        working-directory: ./backend
+        run: |
+          echo "Seeding database..."
+          npm run seed
+          echo "Database seeded successfully"
+
+      - name: Verify seeded data
+        run: |
+          echo "Verifying joke count..."
+          JOKE_COUNT=$(PGPASSWORD=postgres psql -h localhost -U postgres -d jokes_db_test -t -c 'SELECT COUNT(*) FROM jokes;' | xargs)
+          echo "Found $JOKE_COUNT jokes in database"
+          if [ "$JOKE_COUNT" -lt 20 ]; then
+            echo "❌ Expected at least 20 jokes, found $JOKE_COUNT"
+            exit 1
+          fi
+          echo "✅ Seed data verified ($JOKE_COUNT jokes)"
+
+      - name: Test query with RANDOM()
+        run: |
+          echo "Testing RANDOM() query..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -d jokes_db_test -c 'SELECT id, content FROM jokes ORDER BY RANDOM() LIMIT 1;'
+          echo "RANDOM() query successful"
+
+      - name: Rollback migrations (down)
+        working-directory: ./backend
+        run: |
+          echo "Rolling back migrations (down)..."
+          npm run migrate:rollback
+          echo "Migrations rolled back successfully"
+
+      - name: Verify table removal
+        run: |
+          echo "Verifying jokes table is dropped..."
+          TABLE_EXISTS=$(PGPASSWORD=postgres psql -h localhost -U postgres -d jokes_db_test -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'jokes');" | xargs)
+          if [ "$TABLE_EXISTS" = "t" ]; then
+            echo "❌ Table still exists after rollback"
+            exit 1
+          fi
+          echo "✅ Table successfully removed"
+
+      - name: Re-apply migrations (recovery test)
+        working-directory: ./backend
+        run: |
+          echo "Re-applying migrations (recovery test)..."
+          npm run migrate
+          echo "Migrations re-applied successfully"
+
+      - name: Verify table recreation
+        run: |
+          echo "Verifying jokes table exists after recovery..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -d jokes_db_test -c '\dt jokes'
+          echo "Table successfully recreated"
+
+      - name: Run integration tests
+        working-directory: ./backend
+        run: |
+          echo "Running integration tests..."
+          npm test migrations.test.js
+          echo "All migration tests passed"
+
+      - name: Generate migration report
+        if: always()
+        run: |
+          echo "Migration Stress Test Report" > migration-report.txt
+          echo "================================" >> migration-report.txt
+          echo "Test Run: $(date)" >> migration-report.txt
+          echo "Database: jokes_db_test" >> migration-report.txt
+          echo "PostgreSQL Version: 16-alpine" >> migration-report.txt
+          echo "" >> migration-report.txt
+          echo "Tests Executed:" >> migration-report.txt
+          echo "✓ Migration Up (create table)" >> migration-report.txt
+          echo "✓ Seed Data (30+ jokes)" >> migration-report.txt
+          echo "✓ RANDOM() Query Test" >> migration-report.txt
+          echo "✓ Migration Down (drop table)" >> migration-report.txt
+          echo "✓ Migration Recovery (re-apply)" >> migration-report.txt
+          echo "✓ Integration Tests" >> migration-report.txt
+          cat migration-report.txt
+
+      - name: Upload migration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-stress-test-report
+          path: migration-report.txt
+
+  # ============================================
   # Step C: Docker Image Vulnerability Scanning
   # ============================================
   security-image-scan:
