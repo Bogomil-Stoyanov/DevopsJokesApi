@@ -64,25 +64,25 @@ docker run -p 80:80 jokes-api-frontend:latest
 - **Backend**: http://localhost:5000
 - **Frontend**: http://localhost:80 (or just http://localhost)
 
-## 🔒 Security Features
+## Security Features
 
 ### Backend
 
-- ✅ Multi-stage build to reduce image size
-- ✅ Non-root user (`nodejs:1001`)
-- ✅ Production-only dependencies
-- ✅ Health check endpoint
-- ✅ Minimal attack surface
+- Multi-stage build to reduce image size
+- Non-root user (`nodejs:1001`)
+- Production-only dependencies
+- Health check endpoint
+- Minimal attack surface
 
 ### Frontend
 
-- ✅ Multi-stage build (build + serve)
-- ✅ Nginx Alpine (minimal base image)
-- ✅ Non-root user (`nginx-app:1001`)
-- ✅ Security headers (X-Frame-Options, CSP, etc.)
-- ✅ Gzip compression
-- ✅ Static asset caching
-- ✅ Health check endpoint
+- Multi-stage build (build + serve)
+- Nginx Alpine (minimal base image)
+- Non-root user (`nginx-app:1001`)
+- Security headers (X-Frame-Options, CSP, etc.)
+- Gzip compression
+- Static asset caching
+- Health check endpoint
 
 ## Health Checks
 
@@ -106,7 +106,7 @@ curl http://localhost/health
 docker ps
 ```
 
-## 🔧 Environment Variables
+## Environment Variables
 
 ### Backend
 
@@ -125,7 +125,7 @@ The frontend is built with the API URL at build time:
 VITE_API_URL=http://localhost:5000
 ```
 
-## 📊 Docker Compose Services
+## Docker Compose Services
 
 The `docker-compose.yml` defines:
 
@@ -141,7 +141,7 @@ The `docker-compose.yml` defines:
    - Network: jokes-network
    - Restart policy: unless-stopped
 
-## 🧪 Testing
+## Testing
 
 To run tests during build:
 
@@ -149,14 +149,14 @@ To run tests during build:
 docker build --target build -t jokes-api-backend:test ./backend
 ```
 
-## 📦 Image Sizes
+## Image Sizes
 
 The multi-stage builds keep images small:
 
 - Backend: ~150MB (Node Alpine + production deps)
 - Frontend: ~25MB (Nginx Alpine + static files)
 
-## 🔍 Debugging
+## Debugging
 
 **View backend logs:**
 

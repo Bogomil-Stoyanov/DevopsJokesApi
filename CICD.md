@@ -93,19 +93,6 @@ npm audit --production --audit-level=high
 - ❌ **Fail**: Any HIGH or CRITICAL vulnerabilities detected
 - Generates JSON reports uploaded as artifacts for review
 
-**Remediation**:
-
-```bash
-# Update vulnerable dependencies
-npm audit fix
-
-# Force update (breaking changes possible)
-npm audit fix --force
-
-# Manual review
-npm audit
-```
-
 ---
 
 ### 2. Static Application Security Testing (CodeQL)
@@ -138,17 +125,11 @@ language: javascript
 - Does NOT fail the build (informational)
 - Provides actionable remediation guidance
 
-**Best Practices**:
-
-- Review alerts in GitHub Security tab
-- Enable CodeQL on all branches
-- Use security-and-quality query suite for comprehensive coverage
-
 ---
 
 ### 3. Docker Image Vulnerability Scanning (Trivy)
 
-**Tool**: Aqua Security Trivy
+**Tool**: Trivy
 
 **What it does**:
 
@@ -172,20 +153,6 @@ format: "sarif" # Security Alert Format
 - ❌ **Fail**: Any HIGH/CRITICAL vulnerabilities in images
 - Uploads SARIF reports to GitHub Security tab
 - Scans BOTH backend and frontend images
-
-**Remediation**:
-
-```bash
-# Scan locally
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image jokes-api-backend:latest
-
-# Update base images in Dockerfiles
-FROM node:18-alpine3.19  # Use specific versions with patches
-
-# Rebuild after fixes
-docker build -t jokes-api-backend:latest ./backend
-```
 
 ---
 
@@ -298,18 +265,6 @@ docker pull <your-dockerhub-username>/jokes-api-frontend:latest
 docker pull <your-dockerhub-username>/jokes-api-backend:abc1234567890
 ```
 
-### Kubernetes Deployment Update
-
-Update `k8s/backend-deployment.yaml`:
-
-```yaml
-spec:
-  containers:
-    - name: backend
-      image: <your-dockerhub-username>/jokes-api-backend:abc1234567890
-      # Use SHA tags in production!
-```
-
 ---
 
 ## Monitoring & Observability
@@ -335,8 +290,8 @@ spec:
 Each workflow run stores:
 
 - `dependency-audit-reports`: npm audit JSON files
-- `backend-image`: Docker image tarball
-- `frontend-image`: Docker image tarball
+- `backend-image`: Docker image
+- `frontend-image`: Docker image
 
 Download from **Actions → Workflow run → Artifacts**
 
@@ -367,48 +322,7 @@ test → [security-dependencies, security-codeql] → build → security-image-s
 
 Typical execution time:
 
-- **PR**: ~5-8 minutes
-- **Push with delivery**: ~8-12 minutes
-
----
-
-## Troubleshooting
-
-### Issue: npm audit fails with false positives
-
-**Solution**: Audit only production dependencies
-
-```yaml
-run: npm audit --production --audit-level=high
-```
-
-### Issue: CodeQL not finding code
-
-**Solution**: Ensure autobuild works or specify build commands
-
-```yaml
-- name: Autobuild
-  uses: github/codeql-action/autobuild@v3
-```
-
-### Issue: Trivy scan timeout
-
-**Solution**: Increase timeout or reduce scan scope
-
-```yaml
-- uses: aquasecurity/trivy-action@master
-  with:
-    timeout: "10m"
-```
-
-### Issue: Docker Hub push unauthorized
-
-**Solution**: Verify secrets are set correctly
-
-```bash
-# Test locally
-echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
-```
+- **PR**: ~4-5 minutes
 
 ---
 
@@ -424,11 +338,6 @@ cd frontend && npm audit --production --audit-level=high
 # Build images
 docker build -t jokes-api-backend:test ./backend
 docker build -t jokes-api-frontend:test ./frontend
-
-# Trivy scan
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image jokes-api-backend:test --severity HIGH,CRITICAL
-```
 
 ---
 
@@ -453,13 +362,4 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
 - [Docker Security Best Practices](https://docs.docker.com/develop/security-best-practices/)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 
----
-
-## Support
-
-For issues or questions:
-
-1. Check workflow logs in GitHub Actions
-2. Review security alerts in GitHub Security tab
-3. Consult this documentation
-4. Review relevant tool documentation above
+```

@@ -7,7 +7,7 @@ echo " Removing Jokes API from Kubernetes..."
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
-    echo "kubectl not found. Please install kubectl first."
+    echo "kubectl not found."
     exit 1
 fi
 

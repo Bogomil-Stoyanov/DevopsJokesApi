@@ -29,11 +29,11 @@ echo "Deploying frontend..."
 kubectl apply -f k8s/frontend-deployment.yaml
 kubectl apply -f k8s/frontend-service.yaml
 
-# Deploy Ingress (optional)
+# Deploy Ingress
 echo "Deploying Ingress..."
 kubectl apply -f k8s/ingress.yaml
 
-# Deploy HPAs (optional)
+# Deploy HPAs
 echo "Deploying Horizontal Pod Autoscalers..."
 kubectl apply -f k8s/backend-hpa.yaml
 kubectl apply -f k8s/frontend-hpa.yaml
@@ -55,6 +55,3 @@ echo ""
 echo "To access the application:"
 echo "   kubectl get svc -n jokes-api"
 echo ""
-echo "For LoadBalancer: Wait for EXTERNAL-IP"
-echo "For NodePort: Access via <node-ip>:30080"
-echo "For Ingress: Add 'jokes-api.local' to /etc/hosts"
