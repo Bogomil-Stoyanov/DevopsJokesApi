@@ -53,7 +53,7 @@ module.exports = {
     client: "postgresql",
     connection: {
       host: process.env.DB_HOST || "localhost",
-      port: process.env.DB_PORT || 5432,
+      port: process.env.DB_PORT || 5433, // Use test container port
       database: process.env.DB_NAME || "jokes_db_test",
       user: process.env.DB_USER || "postgres",
       password: process.env.DB_PASSWORD || "postgres",

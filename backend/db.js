@@ -19,8 +19,8 @@ db.raw("SELECT 1")
   })
   .catch((err) => {
     console.error("✗ Database connection failed:", err.message);
-    // Don't exit in production, let the app handle it
-    if (environment !== "production") {
+    // Don't exit in production or test environments
+    if (environment !== "production" && environment !== "test") {
       process.exit(1);
     }
   });
