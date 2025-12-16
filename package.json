@@ -9,9 +9,11 @@
     "frontend": "cd frontend && npm run dev",
     "backend:start": "cd backend && npm start",
     "backend:test": "cd backend && npm test",
+    "backend:test:all": "cd backend && npm run test:all",
     "frontend:build": "cd frontend && npm run build",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "test": "cd backend && npm test"
+    "test": "cd backend && npm test",
+    "test:all": "cd backend && npm run test:all"
   },
   "keywords": [
     "jokes",
