@@ -1,5 +1,7 @@
 # Jokes API - DevOps Project
 
+![Project Banner](picture.png)
+
 A full-stack application demonstrating modern DevOps practices including containerization, orchestration, and automated CI/CD pipelines with comprehensive security scanning.
 
 ## Table of Contents
