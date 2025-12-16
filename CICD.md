@@ -322,8 +322,7 @@ test → [security-dependencies, security-codeql] → build → security-image-s
 
 Typical execution time:
 
-- **PR**: ~5-8 minutes
-- **Push with delivery**: ~8-12 minutes
+- **PR**: ~4-5 minutes
 
 ---
 
