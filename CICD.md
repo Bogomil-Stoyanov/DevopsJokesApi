@@ -202,6 +202,8 @@ sonar.javascript.lcov.reportPaths=backend/coverage/lcov.info
 - Detailed reports available on [SonarCloud Dashboard](https://sonarcloud.io)
 - Tracks metrics over time (trending)
 
+**GitHub Action**: Uses `SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9` (v7.0.0) with full commit SHA for security
+
 ---
 
 ## Required GitHub Secrets
