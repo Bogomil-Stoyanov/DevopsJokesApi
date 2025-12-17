@@ -105,9 +105,9 @@ Git Push → CI → Security Scanning → Build → Container Scan → Deploy
 | GitHub Actions | CI/CD automation         |
 | npm audit      | Dependency scanning      |
 | CodeQL         | Static code analysis     |
+| SonarCloud     | Code quality & security  |
 | Trivy          | Container scanning       |
 | Alpine Linux   | Base images              |
-| Sonar Cloud    | Code scannig             |
 
 ## Project Structure
 
@@ -702,6 +702,14 @@ _3B. Static Code Analysis (CodeQL)_
 - Detects security vulnerabilities (XSS, injection, etc.)
 - Results uploaded to GitHub Security tab
 
+_3C. Code Quality Analysis (SonarCloud)_
+
+- Comprehensive code quality and security analysis
+- Detects bugs, code smells, and security hotspots
+- Tracks technical debt and code coverage
+- Quality gate enforcement
+- Results available on SonarCloud dashboard
+
 **Stage 4: Build Docker Images**
 
 - Multi-stage Docker builds
@@ -723,12 +731,13 @@ _3B. Static Code Analysis (CodeQL)_
 
 ### Security Scanning Details
 
-The pipeline implements four layers of security and reliability testing:
+The pipeline implements five layers of security and reliability testing:
 
 1. **Database Migration Stress Test**: Validates migration up/down/recovery cycle with PostgreSQL service container
 2. **npm audit**: Catches vulnerable dependencies before building
 3. **CodeQL**: Identifies security issues in source code
-4. **Trivy**: Scans final container images for vulnerabilities
+4. **SonarCloud**: Comprehensive code quality, security, and maintainability analysis
+5. **Trivy**: Scans final container images for vulnerabilities
 
 **Severity Thresholds:**
 
@@ -739,12 +748,13 @@ The pipeline implements four layers of security and reliability testing:
 
 ### Required Secrets
 
-To enable Docker Hub delivery, configure these in GitHub repository settings:
+Configure these secrets in GitHub repository settings (Settings → Secrets and variables → Actions):
 
-| Secret Name          | Description                            |
-| -------------------- | -------------------------------------- |
-| `DOCKERHUB_USERNAME` | Your Docker Hub username               |
-| `DOCKERHUB_TOKEN`    | Docker Hub access token (not password) |
+| Secret Name          | Description                            | Required For        |
+| -------------------- | -------------------------------------- | ------------------- |
+| `DOCKERHUB_USERNAME` | Your Docker Hub username               | Docker delivery     |
+| `DOCKERHUB_TOKEN`    | Docker Hub access token (not password) | Docker delivery     |
+| `SONAR_TOKEN`        | SonarCloud authentication token        | SonarCloud analysis |
 
 **Creating Docker Hub token:**
 
@@ -754,11 +764,20 @@ To enable Docker Hub delivery, configure these in GitHub repository settings:
 4. Permissions: Read, Write, Delete
 5. Copy token and add to GitHub Secrets
 
+**Creating SonarCloud token:**
+
+1. Login to [SonarCloud](https://sonarcloud.io)
+2. My Account → Security
+3. Generate new token with name `github-actions`
+4. Copy token and add to GitHub Secrets as `SONAR_TOKEN`
+5. Configure your project in SonarCloud dashboard
+
 ### Viewing Pipeline Results
 
 - **Workflow runs**: Actions tab in GitHub repository
 - **Security alerts**: Security tab → Code scanning alerts
 - **Dependency vulnerabilities**: Security tab → Dependabot alerts
+- **SonarCloud quality**: [SonarCloud Dashboard](https://sonarcloud.io)
 - **Artifacts**: Download from workflow run page
 
 **For comprehensive CI/CD documentation**, see [CICD.md](./CICD.md)
