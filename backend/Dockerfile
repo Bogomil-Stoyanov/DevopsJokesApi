@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (ignore scripts to prevent arbitrary code execution)
+RUN npm ci --only=production --ignore-scripts
 
 # Stage 2: Build (for running tests during CI/CD)
 FROM node:18-alpine AS build
