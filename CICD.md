@@ -39,6 +39,13 @@ The pipeline executes on:
 │  │  - Security and quality queries                      │   │
 │  │  - Upload results to GitHub Security tab             │   │
 │  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  2C: Code Quality & Security (SonarCloud)            │   │
+│  │  - Comprehensive code quality analysis               │   │
+│  │  - Security vulnerability detection                  │   │
+│  │  - Code coverage tracking                            │   │
+│  │  - Quality gate enforcement                          │   │
+│  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -156,14 +163,56 @@ format: "sarif" # Security Alert Format
 
 ---
 
+### 4. Code Quality & Security Analysis (SonarCloud)
+
+**Tool**: SonarCloud (by SonarSource)
+
+**What it does**:
+
+- Comprehensive code quality analysis
+- Security vulnerability detection (OWASP Top 10)
+- Code smell identification
+- Technical debt calculation
+- Code coverage tracking
+- Maintainability ratings
+
+**Detection capabilities**:
+
+- **Bugs**: Actual errors in code logic
+- **Vulnerabilities**: Security issues (SQL injection, XSS, etc.)
+- **Code Smells**: Maintainability issues
+- **Security Hotspots**: Code requiring security review
+- **Duplications**: Code duplication percentage
+- **Coverage**: Test coverage metrics
+
+**Configuration** (`sonar-project.properties`):
+
+```properties
+sonar.projectKey=Bogomil-Stoyanov_DevopsJokesApi
+sonar.organization=bogomil-stoyanov
+sonar.sources=backend/,frontend/src/
+sonar.tests=backend/
+sonar.javascript.lcov.reportPaths=backend/coverage/lcov.info
+```
+
+**Pipeline behavior**:
+
+- ✅ **Pass**: Quality gate passed (customizable thresholds)
+- ❌ **Fail**: Quality gate failed (critical issues found)
+- Detailed reports available on [SonarCloud Dashboard](https://sonarcloud.io)
+- Tracks metrics over time (trending)
+
+---
+
 ## Required GitHub Secrets
 
-To enable Docker Hub delivery, configure these secrets in **Settings → Secrets and variables → Actions**:
+Configure these secrets in **Settings → Secrets and variables → Actions**:
 
 | Secret Name          | Description             | How to obtain                                               |
 | -------------------- | ----------------------- | ----------------------------------------------------------- |
 | `DOCKERHUB_USERNAME` | Docker Hub username     | Your Docker Hub account username                            |
 | `DOCKERHUB_TOKEN`    | Docker Hub access token | Docker Hub → Account Settings → Security → New Access Token |
+| `SONAR_TOKEN`        | SonarCloud access token | SonarCloud → My Account → Security → Generate Token         |
 
 ### Creating a Docker Hub Access Token:
 
@@ -175,6 +224,15 @@ To enable Docker Hub delivery, configure these secrets in **Settings → Secrets
 6. Copy the token (only shown once)
 7. Add to GitHub repository secrets
 
+### Creating a SonarCloud Token:
+
+1. Login to [SonarCloud](https://sonarcloud.io)
+2. Navigate to **My Account → Security**
+3. Generate new token with name `github-actions`
+4. Copy the token (only shown once)
+5. Add to GitHub repository as `SONAR_TOKEN`
+6. Import/configure your project in SonarCloud dashboard
+
 ---
 
 ## Pipeline Execution
@@ -183,7 +241,7 @@ To enable Docker Hub delivery, configure these secrets in **Settings → Secrets
 
 ```
 ✅ CI & Testing
-✅ Security Scanning (npm audit, CodeQL)
+✅ Security Scanning (npm audit, CodeQL, SonarCloud)
 ✅ Build Docker Images
 ✅ Trivy Image Scanning
 ```
@@ -192,7 +250,7 @@ To enable Docker Hub delivery, configure these secrets in **Settings → Secrets
 
 ```
 ✅ CI & Testing
-✅ Security Scanning (npm audit, CodeQL)
+✅ Security Scanning (npm audit, CodeQL, SonarCloud)
 ✅ Build Docker Images
 ✅ Trivy Image Scanning
 ✅ Delivery → Docker Hub
