@@ -11,10 +11,6 @@
 - **frontend-deployment.yaml** - Frontend deployment with 2 replicas
 - **frontend-service.yaml** - LoadBalancer service for frontend
 - **ingress.yaml** - Ingress routing for HTTP traffic
-
-### Additional Resources
-
-- **frontend-service-nodeport.yaml** - Alternative NodePort for local testing
 - **backend-hpa.yaml** - Horizontal Pod Autoscaler (2-10 replicas)
 - **frontend-hpa.yaml** - Horizontal Pod Autoscaler (2-8 replicas)
 
@@ -97,7 +93,6 @@
 
 - Backend: 5000 (ClusterIP)
 - Frontend: 80 (LoadBalancer)
-- Frontend: 30080 (NodePort)
 
 ### Health Checks
 

@@ -13,7 +13,6 @@ k8s/
 ├── backend-hpa.yaml                    # Backend autoscaling
 ├── frontend-deployment.yaml            # Frontend deployment (2 replicas)
 ├── frontend-service.yaml               # Frontend LoadBalancer service
-├── frontend-service-nodeport.yaml      # Alternative NodePort service
 ├── frontend-hpa.yaml                   # Frontend autoscaling
 ├── ingress.yaml                        # Ingress routing
 ├── deploy.sh                           # Deployment script
@@ -136,20 +135,7 @@ kubectl get svc frontend-service -n jokes-api
 # http://<EXTERNAL-IP>
 ```
 
-### Method 2: NodePort (Minikube/Local)
-
-```bash
-# Use NodePort service instead
-kubectl apply -f k8s/frontend-service-nodeport.yaml
-
-# Get Minikube IP
-minikube ip
-
-# Access application
-# http://<MINIKUBE-IP>:30080
-```
-
-### Method 3: Ingress
+### Method 2: Ingress
 
 ```bash
 # Add to /etc/hosts (on macOS/Linux)
@@ -159,7 +145,7 @@ echo "$(minikube ip) jokes-api.local" | sudo tee -a /etc/hosts
 # http://jokes-api.local
 ```
 
-### Method 4: Port Forward (Development)
+### Method 3: Port Forward (Development)
 
 ```bash
 # Forward frontend

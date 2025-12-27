@@ -9,12 +9,10 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
-    # For production, enable HTTPS redirect and TLS
-    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: nginx
   rules:
-    - host: jokes-api.local # Change this to your domain
+    - host: jokes-api.local
       http:
         paths:
           # Frontend routes
@@ -41,8 +39,3 @@ spec:
                 name: backend-service
                 port:
                   number: 5000
-  # Uncomment for TLS/HTTPS support
-  # tls:
-  # - hosts:
-  #   - jokes-api.local
-  #   secretName: jokes-api-tls
