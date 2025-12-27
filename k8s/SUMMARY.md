@@ -8,6 +8,9 @@
 - **configmap.yaml** - Configuration for both services
 - **backend-deployment.yaml** - Backend deployment with 2 replicas
 - **backend-service.yaml** - ClusterIP service for backend
+- **postgres-secret.yaml** - Credentials for PostgreSQL
+- **postgres-statefulset.yaml** - StatefulSet for PostgreSQL with persistent storage
+- **postgres-service.yaml** - ClusterIP service for PostgreSQL
 - **frontend-deployment.yaml** - Frontend deployment with 2 replicas
 - **frontend-service.yaml** - LoadBalancer service for frontend
 - **ingress.yaml** - Ingress routing for HTTP traffic

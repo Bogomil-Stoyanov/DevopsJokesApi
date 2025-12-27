@@ -10,6 +10,9 @@ k8s/
 ├── configmap.yaml                      # Configuration data
 ├── backend-deployment.yaml             # Backend deployment (2 replicas)
 ├── backend-service.yaml                # Backend ClusterIP service
+├── postgres-secret.yaml                # PostgreSQL credentials (Secret)
+├── postgres-statefulset.yaml           # PostgreSQL StatefulSet with PVC
+├── postgres-service.yaml               # PostgreSQL ClusterIP service
 ├── backend-hpa.yaml                    # Backend autoscaling
 ├── frontend-deployment.yaml            # Frontend deployment (2 replicas)
 ├── frontend-service.yaml               # Frontend LoadBalancer service

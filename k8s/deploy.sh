@@ -19,6 +19,28 @@ kubectl apply -f k8s/namespace.yaml
 echo "Creating ConfigMap..."
 kubectl apply -f k8s/configmap.yaml
 
+# Deploy PostgreSQL
+echo "Deploying PostgreSQL..."
+
+# Create Secret dynamically (avoids committing credentials)
+echo "Ensuring postgres Secret exists..."
+if ! kubectl get secret postgres-secret -n jokes-api > /dev/null 2>&1; then
+    echo "Creating postgres-secret in cluster..."
+    kubectl create secret generic postgres-secret \
+        -n jokes-api \
+        --from-literal=POSTGRES_USER=${POSTGRES_USER:-postgres} \
+        --from-literal=POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres} \
+        --from-literal=POSTGRES_DB=${POSTGRES_DB:-jokes_db}
+else
+    echo "postgres-secret already exists"
+fi
+
+kubectl apply -n jokes-api -f k8s/postgres-statefulset.yaml
+kubectl apply -n jokes-api -f k8s/postgres-service.yaml
+
+echo "Waiting for PostgreSQL to be ready..."
+kubectl rollout status statefulset/postgres -n jokes-api --timeout=180s || true
+
 # Deploy backend
 echo "Deploying backend..."
 kubectl apply -f k8s/backend-deployment.yaml
