@@ -40,14 +40,20 @@ spec:
                   name: jokes-api-config
                   key: PORT
             - name: DB_HOST
-              value: "postgres-service"
+              valueFrom:
+                configMapKeyRef:
+                  name: jokes-api-config
+                  key: DB_HOST
             - name: DB_PORT
-              value: "5432"
+              valueFrom:
+                configMapKeyRef:
+                  name: jokes-api-config
+                  key: DB_PORT
             - name: DB_NAME
               valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_DB
+                configMapKeyRef:
+                  name: jokes-api-config
+                  key: DB_NAME
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
